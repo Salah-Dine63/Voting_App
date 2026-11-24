@@ -1,0 +1,22 @@
+Le projet consiste à concevoir et réaliser une plateforme web interactive permettant aux
+utilisateurs de créer des sondages, de participer à des votes et de consulter les résultats en
+temps réel. La plateforme intègre une fonctionnalité d’intelligence artificielle générative pour
+proposer une question et des réponses à partir d’un thème.
+Socket.IO est utilisé pour diffuser les changements de résultats et les notifications de clôture
+aux clients concernés. Le système doit empêcher les votes multiples, refuser les votes après
+clôture et gérer les erreurs des services externes.
+
+
+
+
+
+Technologies utilisée :
+>_Backend: nodejs-->Express.
+           REST api architecture
+           PostgreSQL
+           Socket.IO
+           Axios
+           JWT pour L'authentification
+
+>_Frontend : Reactjs
+

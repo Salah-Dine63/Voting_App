@@ -1,3 +1,4 @@
-/.env
+/Backend-Logic/.env
+/Backend-Logic/node_modules
 /node_modules
 /.idea
