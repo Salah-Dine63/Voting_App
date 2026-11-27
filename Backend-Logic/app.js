@@ -2,15 +2,19 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const { clientOrigins } = require('./config/clientOrigins');
 
 const authRoutes = require('./routes/authRoutes');
+const pollRoutes = require('./routes/pollRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.CLIENT_URL,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: clientOrigins,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -26,6 +30,8 @@ app.get('/', (req, res) => {
 
 // Authentication routes
 app.use('/api/auth', authRoutes);
+app.use('/api/polls', pollRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -34,13 +40,6 @@ app.use((req, res) => {
   });
 });
 
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error(err);
-
-  res.status(err.status || 500).json({
-    message: 'Internal server error'
-  });
-});
+app.use(errorHandler);
 
 module.exports = app;

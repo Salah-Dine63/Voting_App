@@ -7,6 +7,10 @@
 var app = require('../app');
 var debug = require('debug')('backend-logic:server');
 var http = require('http');
+var { Server: SocketServer } = require('socket.io');
+var { registerSocketHandlers } = require('../sockets/socketHandlers');
+var { startPollClosureJob } = require('../jobs/pollClosureJob');
+var { clientOrigins } = require('../config/clientOrigins');
 
 /**
  * Get port from environment and store in Express.
@@ -20,6 +24,15 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+var io = new SocketServer(server, {
+  cors: {
+    origin: clientOrigins,
+    methods: ['GET', 'POST']
+  }
+});
+
+registerSocketHandlers(io);
+startPollClosureJob(io);
 
 /**
  * Listen on provided port, on all network interfaces.

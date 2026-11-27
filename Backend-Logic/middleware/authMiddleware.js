@@ -2,45 +2,61 @@
 const jwt = require('jsonwebtoken');
 const pool = require('../databaseConfig/databaseConnection');
 
-const protect = async (req, res, next) => {
+const getUserFromToken = async (token) => {
+    let decoded;
     try {
-        const authHeader = req.headers.authorization;
-
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({
-                message: 'Authentication required'
-            });
-        }
-
-        const token = authHeader.split(' ')[1];
-
-        const decoded = jwt.verify(
-            token,
-            process.env.JWT_SECRET
-        );
-
-        const result = await pool.query(
-            `SELECT id, first_name, last_name, email, role, created_at
-             FROM users
-             WHERE id = $1`,
-            [decoded.id]
-        );
-
-        if (result.rows.length === 0) {
-            return res.status(401).json({
-                message: 'User not found'
-            });
-        }
-
-        req.user = result.rows[0];
-
-        next();
-
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (error) {
-        return res.status(401).json({
-            message: 'Invalid or expired token'
-        });
+        return null;
+    }
+
+    const result = await pool.query(
+        `SELECT id, first_name, last_name, email, role, created_at
+         FROM users
+         WHERE id = $1`,
+        [decoded.id]
+    );
+
+    return result.rows[0] || null;
+};
+
+const protect = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    try {
+        const user = await getUserFromToken(authHeader.slice(7));
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid or expired token' });
+        }
+        req.user = user;
+        return next();
+    } catch (error) {
+        return next(error);
     }
 };
 
-module.exports = { protect };
+const optionalProtect = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return next();
+    }
+    if (!authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+
+    try {
+        const user = await getUserFromToken(authHeader.slice(7));
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid or expired token' });
+        }
+        req.user = user;
+        return next();
+    } catch (error) {
+        return next(error);
+    }
+};
+
+module.exports = { protect, optionalProtect };

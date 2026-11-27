@@ -1,22 +1,75 @@
-Le projet consiste à concevoir et réaliser une plateforme web interactive permettant aux
-utilisateurs de créer des sondages, de participer à des votes et de consulter les résultats en
-temps réel. La plateforme intègre une fonctionnalité d’intelligence artificielle générative pour
-proposer une question et des réponses à partir d’un thème.
-Socket.IO est utilisé pour diffuser les changements de résultats et les notifications de clôture
-aux clients concernés. Le système doit empêcher les votes multiples, refuser les votes après
-clôture et gérer les erreurs des services externes.
+# Commonplace — plateforme de sondages
 
+Application web React/Vite et API Express/PostgreSQL pour créer des sondages, voter une seule
+fois par sondage, partager un lien public et consulter les résultats en direct.
 
+## Technologies
 
+- Backend : Node.js, Express, PostgreSQL (`pg`), JWT, Socket.IO et `node-cron`.
+- Frontend : React, Vite, React Router et Socket.IO Client.
 
+## Configuration et démarrage
 
-Technologies utilisée :
->_Backend: nodejs-->Express.
-           REST api architecture
-           PostgreSQL
-           Socket.IO
-           Axios
-           JWT pour L'authentification
+1. Configurez `Backend-Logic/.env` avec `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`,
+   `DB_PASSWORD`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_URL` (origine du client, par ex.
+   `http://localhost:5173`) et `PORT`. `CLIENT_URL` peut contenir plusieurs origines séparées
+   par des virgules. Sans cette variable, l’API autorise `localhost:5173` et `127.0.0.1:5173`
+   pour le développement local.
+2. Pour une nouvelle base vide, exécutez `Database-Logic/databaseCreationScript.sql`.
+   N’exécutez pas ce script d’initialisation sur une base déjà créée. Dans les deux cas
+   (base neuve initialisée ou base existante avec le schéma initial), appliquez ensuite une
+   seule fois la migration :
 
->_Frontend : Reactjs
+   ```sh
+   psql -d votre_base -f Database-Logic/migrations/001_polling_platform.sql
+   ```
+
+   Cette migration conserve les lignes existantes, attribue un UUID public à chaque sondage et
+   convertit `published` en `active`. Ne la relancez pas après son application. Le backend
+   indique si cette migration manque au démarrage ; redémarrez-le après l’avoir appliquée.
+3. Démarrez l’API depuis `Backend-Logic` :
+
+   ```sh
+   npm install
+   npm start
+   ```
+
+4. Démarrez le client depuis `Frontend_Client/frontend` :
+
+   ```sh
+   npm install
+   npm run dev
+   ```
+
+   Le client utilise par défaut `http://localhost:3000/api`. Configurez éventuellement
+   `VITE_API_URL` et `VITE_SOCKET_URL` dans l’environnement Vite pour un autre déploiement.
+
+## Fonctionnalités
+
+- Inscription et connexion existantes, session JWT restaurée par le client.
+- Création de brouillons avec 2 à 6 options, édition/suppression avant publication, publication
+  et clôture manuelle.
+- Exploration et participation aux sondages actifs via un lien public UUID.
+- Vote transactionnel, option liée au sondage et unicité `(user_id, poll_id)` en base.
+- Résultats accessibles avec décompte et pourcentages ; mises à jour diffusées dans la salle
+  Socket.IO du sondage après validation du vote.
+- Fermeture automatique des sondages expirés (vérification chaque minute) et tableau de bord
+  personnel.
+
+## API principale
+
+- `GET /api/polls` — sondages actifs.
+- `GET /api/polls/:publicId` — détail public (les brouillons sont réservés à leur créateur).
+- `GET /api/polls/:publicId/results` — résultats.
+- `POST /api/polls`, `PUT /api/polls/:publicId` — créer/modifier un brouillon (authentification).
+- `POST /api/polls/:publicId/publish`, `POST /api/polls/:publicId/close` — gérer le statut.
+- `POST /api/polls/:publicId/votes` — enregistrer un vote (authentification).
+- `GET /api/polls/mine`, `GET /api/dashboard` — espace personnel (authentification).
+
+Événements Socket.IO : `poll:join`, `poll:leave`, `poll:results-updated` et `poll:closed`.
+
+## Vérification
+
+Depuis `Backend-Logic`, lancez `npm test`. Depuis `Frontend_Client/frontend`, lancez
+`npm run lint` et `npm run build`.
 

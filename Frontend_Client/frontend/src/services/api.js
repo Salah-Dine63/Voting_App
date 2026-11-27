@@ -1,4 +1,5 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api')
+    .replace(/\/+$/, '');
 
 export const apiRequest = async (endpoint, options = {}) => {
     const token = localStorage.getItem('token');
@@ -17,11 +18,24 @@ export const apiRequest = async (endpoint, options = {}) => {
         headers
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data = {};
+    if (responseText) {
+        try {
+            data = JSON.parse(responseText);
+        } catch {
+            throw new Error('The server returned an invalid response.');
+        }
+    }
 
     if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
+        throw new Error(data.message || `Request failed (${response.status})`);
     }
 
     return data;
 };
+
+export const getSocketUrl = () => (
+    import.meta.env.VITE_SOCKET_URL ||
+    API_URL.replace(/\/api$/, '')
+);

@@ -1,13 +1,10 @@
 import {
-    createContext,
-    useContext,
     useEffect,
     useState
 } from 'react';
 
 import { apiRequest } from '../services/api';
-
-const AuthContext = createContext(null);
+import { AuthContext } from './authContextCore';
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -25,7 +22,7 @@ export const AuthProvider = ({ children }) => {
             try {
                 const data = await apiRequest('/auth/me');
                 setUser(data.user);
-            } catch (error) {
+            } catch {
                 localStorage.removeItem('token');
                 setUser(null);
             } finally {
@@ -48,10 +45,15 @@ export const AuthProvider = ({ children }) => {
         return data;
     };
 
-    const register = async (name, email, password) => {
+    const register = async (firstName, lastName, email, password) => {
         const data = await apiRequest('/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ name, email, password })
+            body: JSON.stringify({
+                first_name: firstName,
+                last_name: lastName,
+                email,
+                password
+            })
         });
 
         localStorage.setItem('token', data.token);
@@ -72,8 +74,4 @@ export const AuthProvider = ({ children }) => {
             {children}
         </AuthContext.Provider>
     );
-};
-
-export const useAuth = () => {
-    return useContext(AuthContext);
 };
